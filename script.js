@@ -3,7 +3,8 @@ let formState = {
     selectedService: null,
     currentStep: 'service',
     userData: {},
-    questionAnswers: {}
+    questionAnswers: {},
+    history: ['service'] // Histórico de navegação
 };
 
 // Inicialização quando o DOM estiver carregado
@@ -14,18 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeForm() {
     // Event listeners para seleção de serviço
     const serviceRadios = document.querySelectorAll('input[name="service"]');
-    const btnNextService = document.getElementById('btn-next-service');
     
     serviceRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             formState.selectedService = this.value;
-            btnNextService.disabled = false;
+            // Avanço automático após seleção
+            setTimeout(() => {
+                handleServiceSelection();
+            }, 300); // Pequeno delay para melhor UX
         });
-    });
-    
-    // Event listener para botão continuar da seleção de serviço
-    btnNextService.addEventListener('click', function() {
-        handleServiceSelection();
     });
     
     // Event listener para botão de envio dos dados
@@ -40,6 +38,31 @@ function initializeForm() {
     
     // Máscaras para os campos
     setupInputMasks();
+}
+
+// Função para adicionar ao histórico
+function addToHistory(step) {
+    formState.history.push(step);
+}
+
+// Função para voltar no histórico
+function goBack() {
+    if (formState.history.length > 1) {
+        // Remove o step atual
+        formState.history.pop();
+        // Pega o step anterior
+        const previousStep = formState.history[formState.history.length - 1];
+        
+        // Navega para o step anterior
+        if (previousStep === 'service') {
+            showStep('service');
+        } else if (previousStep === 'questions') {
+            // Reconstrói as perguntas baseado no serviço selecionado
+            handleServiceSelection();
+        } else if (previousStep === 'data') {
+            showDataForm();
+        }
+    }
 }
 
 function setupInputMasks() {
@@ -64,6 +87,8 @@ function setupInputMasks() {
 }
 
 function handleServiceSelection() {
+    addToHistory('questions');
+    
     switch(formState.selectedService) {
         case 'fgts':
             showFGTSMessage();
@@ -78,6 +103,7 @@ function handleServiceSelection() {
             showBolsaFamiliaQuestions();
             break;
         case 'siape':
+            addToHistory('data');
             showDataForm();
             break;
         default:
@@ -98,6 +124,7 @@ function showFGTSMessage() {
 
 function showINSSQuestions() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Algumas perguntas sobre seu benefício INSS</h2>
         <div class="question-container">
             <h3>Seu benefício é de representante legal?</h3>
@@ -139,6 +166,7 @@ function showINSSQuestions() {
 
 function showINSSAgeQuestion() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Idade do titular do benefício</h2>
         <div class="question-container">
             <h3>Qual a idade do titular?</h3>
@@ -175,6 +203,7 @@ function showINSSAgeQuestion() {
 
 function showCLTQuestions() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Algumas perguntas sobre seu emprego</h2>
         <div class="question-container">
             <h3>Quantos meses você trabalha na mesma empresa?</h3>
@@ -211,6 +240,7 @@ function showCLTQuestions() {
 
 function showCLTLoanQuestion() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Empréstimos existentes</h2>
         <div class="question-container">
             <h3>Você já tem algum empréstimo CLT sendo descontado?</h3>
@@ -257,6 +287,7 @@ function showCLTLoanQuestion() {
 
 function showBolsaFamiliaQuestions() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Informações sobre o Bolsa Família</h2>
         <div class="question-container">
             <h3>Qual o valor que recebe do benefício Bolsa Família?</h3>
@@ -293,6 +324,7 @@ function showBolsaFamiliaQuestions() {
 
 function showBolsaFamiliaAppQuestion() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Forma de recebimento</h2>
         <div class="question-container">
             <h3>Você recebe através do Caixa Tem ou do APP da Caixa?</h3>
@@ -339,6 +371,7 @@ function showBolsaFamiliaAppQuestion() {
 
 function showBolsaFamiliaLoanQuestion() {
     const questionsHTML = `
+        <button type="button" class="btn-back" onclick="goBack()">← Voltar</button>
         <h2>Empréstimos existentes</h2>
         <div class="question-container">
             <h3>Você já tem algum empréstimo sendo descontado de seu Caixa Tem?</h3>
@@ -390,6 +423,9 @@ function showQuestionsStep(html) {
 }
 
 function showDataForm() {
+    if (!formState.history.includes('data')) {
+        addToHistory('data');
+    }
     showStep('data');
 }
 
@@ -484,7 +520,8 @@ function restartForm() {
         selectedService: null,
         currentStep: 'service',
         userData: {},
-        questionAnswers: {}
+        questionAnswers: {},
+        history: ['service'] // Resetar histórico
     };
     
     // Limpar formulários
@@ -495,9 +532,6 @@ function restartForm() {
             input.value = '';
         }
     });
-    
-    // Desabilitar botão de continuar
-    document.getElementById('btn-next-service').disabled = true;
     
     // Voltar para a primeira etapa
     showStep('service');
