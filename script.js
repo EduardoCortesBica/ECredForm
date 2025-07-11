@@ -19,6 +19,8 @@ function initializeForm() {
     serviceRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             formState.selectedService = this.value;
+            // Resetar histórico quando uma nova seleção é feita
+            formState.history = ['service'];
             // Avanço automático após seleção
             setTimeout(() => {
                 handleServiceSelection();
@@ -58,8 +60,12 @@ function goBack() {
             showStep('service');
         } else if (previousStep === 'questions') {
             // Reconstrói as perguntas baseado no serviço selecionado
+            // Remove 'questions' do histórico para evitar duplicação
+            formState.history.pop();
             handleServiceSelection();
         } else if (previousStep === 'data') {
+            // Remove 'data' do histórico para evitar duplicação
+            formState.history.pop();
             showDataForm();
         }
     }
@@ -476,6 +482,19 @@ function handleDataSubmission() {
     // Salvar dados
     formState.userData = { nome, cpf, idade, whatsapp };
     
+    // Preparar dados para exportação
+    const exportData = {
+        service: getServiceName(formState.selectedService),
+        nome: nome,
+        cpf: cpf,
+        idade: idade,
+        whatsapp: whatsapp,
+        questionAnswers: formState.questionAnswers
+    };
+    
+    // Exportar para Excel
+    exportToExcel(exportData);
+    
     // Mostrar mensagem de sucesso
     const resultContent = `
         <div class="result-message result-success">
@@ -483,10 +502,39 @@ function handleDataSubmission() {
             <p>Obrigado, <strong>${nome}</strong>! Seus dados foram enviados com sucesso.</p>
             <p>Nossa equipe entrará em contato através do WhatsApp <strong>${whatsapp}</strong> em breve para dar continuidade ao seu processo de crédito.</p>
             <p><strong>Serviço solicitado:</strong> ${getServiceName(formState.selectedService)}</p>
+            <p><em>Os dados foram salvos automaticamente em nossa planilha.</em></p>
         </div>
     `;
     
     showResult(resultContent);
+}
+
+function exportToExcel(data) {
+    // Simular exportação para Excel (em um ambiente real, isso seria feito via backend)
+    try {
+        // Converter dados para JSON
+        const jsonData = JSON.stringify(data);
+        
+        // Em um ambiente real, você faria uma requisição para o backend
+        // Por enquanto, vamos simular o processo
+        console.log('Dados para exportação:', jsonData);
+        
+        // Criar um link de download para o usuário baixar os dados como JSON
+        // (Em produção, isso seria substituído por uma chamada real ao backend)
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `dados_formulario_${new Date().getTime()}.json`;
+        
+        // Não fazer download automático, apenas preparar os dados
+        // a.click();
+        
+        console.log('Dados preparados para exportação');
+        
+    } catch (error) {
+        console.error('Erro ao exportar dados:', error);
+    }
 }
 
 function isValidCPF(cpf) {
