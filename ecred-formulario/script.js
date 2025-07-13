@@ -510,30 +510,50 @@ function handleDataSubmission() {
 }
 
 function exportToExcel(data) {
-    // Simular exportação para Excel (em um ambiente real, isso seria feito via backend)
+    // Enviar dados para o backend Flask
+    const backendUrl = 'http://localhost:5000/api/submit_form'; // URL do backend local
+    
     try {
-        // Converter dados para JSON
-        const jsonData = JSON.stringify(data);
+        // Mostrar indicador de carregamento
+        console.log('Enviando dados para o backend...');
         
-        // Em um ambiente real, você faria uma requisição para o backend
-        // Por enquanto, vamos simular o processo
-        console.log('Dados para exportação:', jsonData);
-        
-        // Criar um link de download para o usuário baixar os dados como JSON
-        // (Em produção, isso seria substituído por uma chamada real ao backend)
-        const blob = new Blob([jsonData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `dados_formulario_${new Date().getTime()}.json`;
-        
-        // Não fazer download automático, apenas preparar os dados
-        // a.click();
-        
-        console.log('Dados preparados para exportação');
+        fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                console.log('✅ Dados enviados com sucesso para o backend!');
+                console.log('Timestamp:', result.timestamp);
+                if (result.spreadsheet_url) {
+                    console.log('📊 Planilha Google Sheets:', result.spreadsheet_url);
+                }
+            } else {
+                console.error('❌ Erro ao enviar dados:', result.message);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro de conexão com o backend:', error);
+            console.log('💡 Certifique-se de que o backend Flask está rodando em http://localhost:5000');
+            
+            // Fallback: salvar dados localmente como JSON para não perder
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dados_formulario_backup_${new Date().getTime()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            console.log('💾 Dados salvos como backup local em JSON');
+        });
         
     } catch (error) {
-        console.error('Erro ao exportar dados:', error);
+        console.error('❌ Erro ao processar exportação:', error);
     }
 }
 
